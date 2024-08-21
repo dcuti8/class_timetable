@@ -1,0 +1,359 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=0.5">
+  <meta http-equiv=Cache-Control content=no-cache />
+  <title>課程表</title>
+  <!-- document.body.innerHTML = document.body.innerHTML.replaceAll(`<img src="images/dot.gif" width="16" height="16" align="absmiddle">`,"√") -->
+
+  <script src="./jquery.min.js"></script>
+
+  <script src="./moment.min.js"></script>
+
+  <script type="text/javascript" src="./data.js"></script>
+
+  <style>
+    table {
+      border-collapse: collapse;
+      border: 1px solid #01cf97;
+    }
+
+    table td,
+    table th {
+      border: 1px solid #c5c5c5;
+      color: black;
+    }
+
+    table thead th {
+      background-color: #f4615c;
+    }
+
+    table tr th,
+    table tr td {
+      padding: 5px 12px
+    }
+
+    .colorBottomBorder {
+      border-bottom: 5px solid black;
+    }
+
+    /* table .inner_tr:nth-child(odd) {
+      background: #e3f38b;
+    }
+
+    table .inner_tr:nth-child(even) {
+      background: #a5d8cb;
+    } */
+  </style>
+</head>
+
+<body>
+  <form enctype="multipart/form-data">
+    <input id="dateTxt" type=date>
+
+  </form>
+
+  <div id="xlx_json" style="white-space: pre-wrap;
+  background-color: aquamarine;
+  width: 100%;
+  height: auto;
+  min-height: 30;
+  border-width: 1;
+  border-color: black;
+  border-style: dotted;"></div>
+
+  <br />
+
+  <div id="tomorrow" style="white-space: pre-wrap;
+  background-color: rgb(146, 127, 255);
+  width: 100%;
+  height: auto;
+  min-height: 30;
+  border-width: 1;
+  border-color: rgb(202, 25, 25);
+  border-style: dotted;"></div>
+
+  <br />
+  <span>本周: </span><br />
+  <table border="1" id="tbl_whole_week">
+    <thead>
+      <th></th>
+      <th>班別編號</th>
+      <th>學科單元</th>
+      <th>講師</th>
+      <th>地點</th>
+      <th>日期</th>
+      <th>时间</th>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <br />
+  <br />
+  <span>下周: </span><br />
+  <table border="1" id="tbl_whole_next_week">
+    <thead>
+      <th></th>
+      <th>班別編號</th>
+      <th>學科單元</th>
+      <th>講師</th>
+      <th>地點</th>
+      <th>日期</th>
+      <th>时间</th>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <br />
+  <br />
+
+  <div id="whole_week" style="white-space: pre-wrap;
+  background-color: darkkhaki;
+  width: 100%;
+  height: auto;
+  min-height: 30;
+  border-width: 2;
+  border-color: red;
+  border-style: solid;"></div>
+
+  <br />
+  <div id="whole_next_week" style="white-space: pre-wrap;
+  background-color: pink;
+  width: 100%;
+  height: auto;
+  min-height: 30;
+  border-width: 2;
+  border-color: blue;
+  border-style: solid;"></div>
+</body>
+
+<script>
+  var json = jsonData;
+
+  let bgColor = {
+    1: "#01cf97",
+    2: "#a2a9b6",
+    3: "#01cf97",
+    4: "#a2a9b6",
+    5: "#01cf97",
+  }
+
+  function getWeekDay(obj) {
+    let result = [];
+    if (obj.hasOwnProperty("一")) {
+      result.push(1);
+    }
+    if (obj.hasOwnProperty("二")) {
+      result.push(2);
+    }
+    if (obj.hasOwnProperty("三")) {
+      result.push(3);
+    }
+    if (obj.hasOwnProperty("四")) {
+      result.push(4);
+    }
+    if (obj.hasOwnProperty("五")) {
+      result.push(5);
+    }
+    return result;
+  }
+
+  function getCNWeekDay(num) {
+    switch (num) {
+      case 1: return "一";
+      case 2: return "二";
+      case 3: return "三";
+      case 4: return "四";
+      case 5: return "五";
+
+    }
+  }
+
+  //add extra info
+  for (var i = 0; i < json.length; i++) {
+    var e = json[i]
+    var next = json[i + 1]
+
+    if (e.hasOwnProperty('時期')) {
+      var date_range = e.時期.split("-");
+      if (date_range.length > 0) {
+        date_range[1] = date_range[1] + " 23:59:59"
+      }
+      e.date_range = date_range;
+    }
+    e.weekDay = getWeekDay(e);
+
+
+    if (i + 1 < json.length) {
+      if (e.學科單元 != null && !next.hasOwnProperty('學科單元')) {
+        next.學期 = e['學期']
+        next.班別編號 = e['班別編號']
+        next.學科單元 = e['學科單元']
+      }
+    }
+
+  }
+
+  // console.log(json)
+
+  var FindContent = function () {
+    this.findByDate = function (date, showCurrent, div_id, isTable) {
+      let result = json.filter((e) => {
+        // if(div_id == null){
+        //   console.log(e,  moment(date).isSameOrAfter(e.date_range[0]) && moment(date).isSameOrBefore(e.date_range[1]))
+        // }
+        return moment(date).isSameOrAfter(e.date_range[0]) && moment(date).isSameOrBefore(e.date_range[1])
+      });
+      // console.log(result)
+
+      let res = result.filter((e) => {
+        return e.weekDay.indexOf(moment(date).isoWeekday()) >= 0;
+      })
+      // console.log(res)
+      let r_res = res.sort((a, b) => {
+        if (a.時間 > b.時間) {
+          return 1;
+        } else if (a.時間 < b.時間) {
+          return -1;
+        }
+        else {
+          return 0;
+        }
+      });
+
+
+      let str = showCurrent ? (moment(date).format('YYYY-MM-DD') + "星期" + getCNWeekDay(moment(date).isoWeekday()) + ": \n") : "";
+
+
+      if (isTable) {
+        let row = document.createElement("tr"); //创建行
+        let td0 = document.createElement("td"); //创建单元格
+        td0.appendChild(document.createTextNode((moment(date).format('YYYY-MM-DD') + "星期" + getCNWeekDay(moment(date).isoWeekday())))); //创建单元格并为单元格添加内容
+        if (r_res.length > 0) {
+          td0.rowSpan = r_res.length + 1;
+        }
+        row.appendChild(td0); //将单元格添加到行内
+        row.bgColor = bgColor[moment(date).isoWeekday()];
+        document.getElementById(div_id).append(row); //将行添加到<tbody>中
+      }
+
+
+      if (r_res.length > 0) {
+        r_res.forEach((e, i) => {
+          str = str + e.班別編號 + "  學科單元: " + e.學科單元 + "  講師: " + e.講師 + "  地點: " + e.地點 + "   " + e.時期 + "   " + e.時間 + "\n"
+
+          if (isTable) {
+            let row1 = document.createElement("tr"); //创建行
+            row1.className = "inner_tr"
+            if (i == r_res.length - 1) {
+              row1.className = "inner_tr colorBottomBorder"
+            }
+            let td1 = document.createElement("td"); //创建单元格
+            let td2 = document.createElement("td"); //创建单元格
+            let td3 = document.createElement("td"); //创建单元格
+            let td4 = document.createElement("td"); //创建单元格
+            let td5 = document.createElement("td"); //创建单元格
+            let td6 = document.createElement("td"); //创建单元格
+
+            td1.appendChild(document.createTextNode(e.班別編號)); //创建单元格并为单元格添加内容         
+            td2.appendChild(document.createTextNode(e.學科單元)); //创建单元格并为单元格添加内容
+            td3.appendChild(document.createTextNode(e.講師)); //创建单元格并为单元格添加内容
+            td4.appendChild(document.createTextNode(e.地點)); //创建单元格并为单元格添加内容   
+            td5.appendChild(document.createTextNode(e.時期)); //创建单元格并为单元格添加内容
+            td6.appendChild(document.createTextNode(e.時間)); //创建单元格并为单元格添加内容
+
+            row1.appendChild(td1); //将单元格添加到行内
+            row1.appendChild(td2); //将单元格添加到行内
+            row1.appendChild(td3); //将单元格添加到行内
+            row1.appendChild(td4); //将单元格添加到行内
+            row1.appendChild(td5); //将单元格添加到行内
+            row1.appendChild(td6); //将单元格添加到行内
+
+            if (div_id) {
+              document.getElementById(div_id).append(row1); //将行添加到<tbody>中
+            }
+          }
+
+        });
+      }
+
+      if (div_id) {
+        if (!isTable) {
+          let div = document.getElementById(div_id)
+          div.innerHTML += str;
+        }
+      }
+      else {
+        let div = document.getElementById('xlx_json')
+        div.innerHTML = str;
+        // jQuery('#xlx_json').context(JSON.stringify(str));
+
+      }
+
+    }
+  }
+
+
+  var 學科單元 = [];
+
+  function handleDateChange(evt) {
+
+    var date = evt.target.value; // FileList object
+    // console.log(date)
+    new FindContent().findByDate(date, false);
+  }
+
+
+
+  document.getElementById('dateTxt').addEventListener('change', handleDateChange, false);
+
+  function getWholeWeekByDate(date, div_id) {
+    let div = document.getElementById(div_id)
+
+    let startDate = moment(date).startOf('isoWeek');
+    div.innerHTML += startDate.format('YYYY-MM-DD') + " 星期一: \n";
+    new FindContent().findByDate(startDate, false, div_id);
+    // console.log('Start Date:' + startDate.format('MM/DD/YYYY'));
+    div.innerHTML += "\n";
+
+    for (let i = 1; i <= 4; i++) {
+      let date = moment(startDate).add(i, 'days');
+      div.innerHTML += date.format('YYYY-MM-DD') + "星期" + getCNWeekDay(i + 1) + ": \n";
+      new FindContent().findByDate(date, false, div_id);
+      div.innerHTML += "\n";
+
+    }
+
+  }
+
+
+  function getWholeWeekByDateTable(date, div_id) {
+    let startDate = moment(date).startOf('isoWeek');
+    new FindContent().findByDate(startDate, false, div_id, true);
+    // console.log('Start Date:' + startDate.format('MM/DD/YYYY'));
+    for (let i = 1; i <= 4; i++) {
+      let date = moment(startDate).add(i, 'days');
+      new FindContent().findByDate(date, false, div_id, true);
+    }
+
+  }
+
+  document.getElementById("whole_week").innerHTML += "本周: \n";
+  //fill in current week
+  getWholeWeekByDate(moment(), 'whole_week')
+  getWholeWeekByDateTable(moment(), "tbl_whole_week")
+
+  //fill in next week
+  document.getElementById("whole_next_week").innerHTML += "下周: \n";
+  getWholeWeekByDate(moment().add(1, 'weeks'), 'whole_next_week')
+  getWholeWeekByDateTable(moment().add(1, 'weeks'), "tbl_whole_next_week")
+
+  let tom = moment().add(1, "days");
+  document.getElementById("tomorrow").innerHTML += "明天: \n";
+  new FindContent().findByDate(tom, false, "tomorrow");
+  if (document.getElementById("tomorrow").innerHTML == "明天: \n") {
+    document.getElementById("tomorrow").innerHTML += "不用上课 ☺☺";
+  }
+
+</script>
+
+</html>
